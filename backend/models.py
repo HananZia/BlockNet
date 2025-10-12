@@ -2,16 +2,20 @@ from datetime import datetime
 import json
 from extensions import db
 
+
 class User(db.Model):
     __tablename__ = "users"
+
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False, index=True)
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(256), nullable=False)
-    role = db.Column(db.String(20), nullable=False, default="user")  # user | admin
+    role = db.Column(db.String(20), nullable=False, default="user")
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     files = db.relationship("FileRecord", back_populates="owner", lazy="dynamic")
+    sent_shares = db.relationship("FileShare", foreign_keys="FileShare.sender_id", back_populates="sender", lazy="dynamic")
+    received_shares = db.relationship("FileShare", foreign_keys="FileShare.receiver_id", back_populates="receiver", lazy="dynamic")
 
     def to_dict(self):
         return {
@@ -24,15 +28,17 @@ class User(db.Model):
 
 class FileRecord(db.Model):
     __tablename__ = "files"
+
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
     filename = db.Column(db.String(300), nullable=False)
     filehash = db.Column(db.String(128), nullable=False, index=True)
-    storage_uri = db.Column(db.Text, nullable=True)  # optional: IPFS CID / S3 URL
-    block_index = db.Column(db.Integer, nullable=True)  # index in blockchain table
+    storage_uri = db.Column(db.Text, nullable=True)
+    block_index = db.Column(db.Integer, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     owner = db.relationship("User", back_populates="files")
+    shares = db.relationship("FileShare", back_populates="file", lazy="dynamic")
 
     def to_dict(self):
         return {
@@ -47,11 +53,12 @@ class FileRecord(db.Model):
 
 class Block(db.Model):
     __tablename__ = "blocks"
-    id = db.Column(db.Integer, primary_key=True)  # autoincrement PK
+
+    id = db.Column(db.Integer, primary_key=True)
     index = db.Column(db.Integer, nullable=False, unique=True, index=True)
     previous_hash = db.Column(db.String(128), nullable=False)
     block_hash = db.Column(db.String(128), nullable=False, unique=True)
-    data = db.Column(db.Text, nullable=False)  # JSON string; e.g. list of file hashes or metadata
+    data = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     def data_json(self):
@@ -67,4 +74,27 @@ class Block(db.Model):
             "block_hash": self.block_hash,
             "data": self.data_json(),
             "timestamp": self.timestamp.isoformat()
+        }
+
+
+class FileShare(db.Model):
+    __tablename__ = "file_shares"
+
+    id = db.Column(db.Integer, primary_key=True)
+    file_id = db.Column(db.Integer, db.ForeignKey("files.id"), nullable=False)
+    sender_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    receiver_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    file = db.relationship("FileRecord", back_populates="shares")
+    sender = db.relationship("User", foreign_keys=[sender_id], back_populates="sent_shares")
+    receiver = db.relationship("User", foreign_keys=[receiver_id], back_populates="received_shares")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "file_id": self.file_id,
+            "sender_id": self.sender_id,
+            "receiver_id": self.receiver_id,
+            "created_at": self.created_at.isoformat()
         }

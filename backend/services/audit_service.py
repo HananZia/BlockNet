@@ -1,4 +1,3 @@
-
 from datetime import datetime
 from extensions import db
 
@@ -24,7 +23,6 @@ class AuditLog(db.Model):
 class AuditService:
     @staticmethod
     def log_action(user_id, action, details=None):
-        """Save an audit log entry to DB"""
         log = AuditLog(user_id=user_id, action=action, details=details)
         db.session.add(log)
         db.session.commit()
@@ -32,7 +30,6 @@ class AuditService:
 
     @staticmethod
     def get_logs(user_id=None, limit=100):
-        """Retrieve audit logs, optionally filtered by user"""
         query = AuditLog.query.order_by(AuditLog.timestamp.desc())
         if user_id:
             query = query.filter_by(user_id=user_id)

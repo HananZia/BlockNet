@@ -19,7 +19,6 @@ def upload_file():
     content = file.read()
     file_hash = hashlib.sha256(content).hexdigest()
 
-    # Save file metadata to DB
     record = FileRecord(
         user_id=user_id,
         filename=file.filename,
@@ -28,7 +27,6 @@ def upload_file():
     db.session.add(record)
     db.session.commit()
 
-    # Audit + Certificate
     AuditService.log_action(user_id, "UPLOAD", f"File: {file.filename}")
     cert = CertService.issue_certificate(user_id, record.id)
 

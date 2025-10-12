@@ -3,13 +3,9 @@ import json
 from datetime import datetime
 from models import Block, db
 
-
 class BlockchainService:
     @staticmethod
     def calculate_hash(index, previous_hash, data_str, timestamp):
-        """
-        Compute hash deterministically using index, prev hash, data string, and timestamp.
-        """
         block_string = json.dumps({
             "index": index,
             "previous_hash": previous_hash,
@@ -20,9 +16,6 @@ class BlockchainService:
 
     @staticmethod
     def create_genesis_block():
-        """
-        Create the genesis block if blockchain is empty.
-        """
         if Block.query.count() == 0:
             dt = datetime.utcnow()
             data_str = json.dumps({"message": "Genesis Block"})
@@ -43,9 +36,6 @@ class BlockchainService:
 
     @staticmethod
     def add_block(data):
-        """
-        Add a new block with given data payload.
-        """
         latest_block = Block.query.order_by(Block.index.desc()).first()
         if not latest_block:
             latest_block = BlockchainService.create_genesis_block()
@@ -70,11 +60,6 @@ class BlockchainService:
 
     @staticmethod
     def validate_chain():
-        """
-        Validate blockchain integrity by checking:
-        - Previous hash matches
-        - Block hash recomputes correctly
-        """
         blocks = Block.query.order_by(Block.index.asc()).all()
         for i in range(1, len(blocks)):
             current = blocks[i]

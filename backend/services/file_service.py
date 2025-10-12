@@ -2,20 +2,16 @@ import hashlib
 from models import FileRecord, db
 from blockchain import Blockchain
 
-# Global blockchain instance
 blockchain = Blockchain()
 
 def hash_file(file_data):
     return hashlib.sha256(file_data).hexdigest()
 
 def save_file_record(file_data, filename, user_id):
-    # Step 1: hash file
     file_hash = hash_file(file_data)
 
-    # Step 2: add to blockchain
     new_block = blockchain.add_block(file_hash, user_id)
 
-    # Step 3: save in DB
     file_record = FileRecord(
         filename=filename,
         file_hash=file_hash,
