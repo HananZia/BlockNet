@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "BlockNetMobile",
-    "slug": "BlockNetMobile",
+    "name": "BlocknetApp",
+    "slug": "BlocknetApp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "blocknetmobile",
+    "scheme": "blocknetapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {

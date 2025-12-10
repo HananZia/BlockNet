@@ -27,14 +27,14 @@ def create_app(config_class=Config):
     app.register_blueprint(files_bp, url_prefix="/api/files")
     app.register_blueprint(blockchain_bp, url_prefix="/api/blockchain")
 
-    @app.route("/api/health", methods=["GET"])
-    def health():
-        return jsonify({"status": "ok"})
-    
+    @app.route("/", methods=["GET"])
+    def starter():
+        return jsonify({"Success": "BlockNet Backend is running."})
+
     @app.route("/api/blocknet", methods=["GET"])
     def blocknet_health():
         return jsonify({"status": "Success", "message": "Blocknet is operational."})
-    
+
     @app.route("/api/auth", methods=["GET"])
     def auth_data():
         users = User.query.all()
@@ -43,7 +43,7 @@ def create_app(config_class=Config):
             for user in users
         ]
         return jsonify({"status": "success", "users": users_list})
-    
+
     @app.route("/api/user", methods=["GET"])
     def user_data():
         users = User.query.all()
@@ -52,7 +52,6 @@ def create_app(config_class=Config):
         ]
         return jsonify({"status": "success", "users": users_list})
 
-    
     @app.route("/api/share", methods=["GET"])
     def share_health():
         return jsonify({"status": "ok"})
@@ -60,7 +59,6 @@ def create_app(config_class=Config):
     @app.route("/api/files", methods=["GET"])
     def files_health():
         return jsonify({"status": "ok"})
-    
 
     with app.app_context():
         db.create_all()

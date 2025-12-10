@@ -16,7 +16,7 @@ class Config:
 
     SQLALCHEMY_DATABASE_URI = os.getenv(
         "DATABASE_URL",
-        f"sqlite:///{BASE_DIR / 'instance' / 'blocknet.db'}"
+        f"sqlite:///{BASE_DIR / 'instance' / 'app.db'}"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
