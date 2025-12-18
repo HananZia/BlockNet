@@ -12,6 +12,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(db.String(20), nullable=False, default="user")
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
 
     files = db.relationship("FileRecord", back_populates="owner", lazy="dynamic")
     sent_shares = db.relationship("FileShare", foreign_keys="FileShare.sender_id", back_populates="sender", lazy="dynamic")
@@ -28,29 +29,49 @@ class User(db.Model):
 
 class FileRecord(db.Model):
     __tablename__ = "files"
-
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
-    filename = db.Column(db.String(300), nullable=False)
-    filehash = db.Column(db.String(128), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    name = db.Column(db.String(300), nullable=False)
+    filehash = db.Column(db.String(128), nullable=False)
     storage_uri = db.Column(db.Text, nullable=True)
     block_index = db.Column(db.Integer, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     owner = db.relationship("User", back_populates="files")
     shares = db.relationship("FileShare", back_populates="file", lazy="dynamic")
+    certificates = db.relationship("Certificate", back_populates="file", lazy="dynamic", cascade="all, delete-orphan")
 
     def to_dict(self):
         return {
             "id": self.id,
             "user_id": self.user_id,
-            "filename": self.filename,
+            "name": self.name,
             "filehash": self.filehash,
             "storage_uri": self.storage_uri,
             "block_index": self.block_index,
             "created_at": self.created_at.isoformat()
         }
+class Certificate(db.Model):
+    __tablename__ = "certificates"
+    id = db.Column(db.Integer, primary_key=True)
+    cert_id = db.Column(db.String(64), unique=True, nullable=False)
+    file_id = db.Column(db.Integer, db.ForeignKey("files.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    issued_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    blockchain_index = db.Column(db.Integer, nullable=True)
 
+    file = db.relationship("FileRecord", back_populates="certificates")
+    owner = db.relationship("User")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "cert_id": self.cert_id,
+            "file_id": self.file_id,
+            "user_id": self.user_id,
+            "issued_at": self.issued_at.isoformat(),
+            "blockchain_index": self.blockchain_index
+        }
 class Block(db.Model):
     __tablename__ = "blocks"
 
@@ -81,11 +102,12 @@ class FileShare(db.Model):
     __tablename__ = "file_shares"
 
     id = db.Column(db.Integer, primary_key=True)
-    file_id = db.Column(db.Integer, db.ForeignKey("files.id"), nullable=False)
+    file_id = db.Column(db.Integer, db.ForeignKey("files.id"), nullable=False)  # match FileRecord table
     sender_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     receiver_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # Relationships
     file = db.relationship("FileRecord", back_populates="shares")
     sender = db.relationship("User", foreign_keys=[sender_id], back_populates="sent_shares")
     receiver = db.relationship("User", foreign_keys=[receiver_id], back_populates="received_shares")
@@ -98,3 +120,4 @@ class FileShare(db.Model):
             "receiver_id": self.receiver_id,
             "created_at": self.created_at.isoformat()
         }
+

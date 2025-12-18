@@ -1,0 +1,516 @@
+{
+  "name": "MyHero",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {},
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -304,
+        48
+      ],
+      "id": "770112ec-cdca-4b6a-939a-b2924865503e",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "51p7N99WESsP1zlu",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputText": "={{ $json.text }}",
+        "categories": {
+          "categories": [
+            {
+              "category": "Scholarship Announcements",
+              "description": "This category will search for announcements of different scholarships offer, whether it is local or international scholarships."
+            },
+            {
+              "category": "Internship offers",
+              "description": "This category will search for internship offers from companies, it may be remote or onsite and may be of morning or evening shifts."
+            },
+            {
+              "category": "Club Notifications",
+              "description": "This category will search for notifications from clubs regarding meetings, events and everything regarding to clubs activities."
+            },
+            {
+              "category": "Portfolio Queries",
+              "description": "This portion will handle the emails from my portfolio related to hiring, current workings, experiences and everything."
+            },
+            {
+              "category": "Projects Related Queries",
+              "description": "This will handle all kinds of project Queries."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textClassifier",
+      "typeVersion": 1.1,
+      "position": [
+        96,
+        0
+      ],
+      "id": "46748a0a-b1d4-44a2-9c73-657737305c3a",
+      "name": "Text Classifier"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -96,
+        400
+      ],
+      "id": "ad967506-cbcf-4536-b566-42a547c9aa38",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "lm0WzzERB2cVstlm",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are Muhammad Hanan Zia, a UG student at NUST. \nWrite a concise and professional reply to an email about a scholarship announcement.\n\nGoals:\n- Thank the sender for sharing the scholarship opportunity\n- Express appreciation for the information and relevance to your academic journey\n- Indicate that you will review the details and apply if you meet the eligibility criteria\n- If details are missing (eligibility, deadline, application link), politely ask the sender to provide them\n- Keep tone polite, professional, and motivated\n\nConstraints:\n- Max 150 words\n- Plain text (no markdown)\n- Avoid over-commitment; keep it appreciative and conditional on eligibility\n- If deadline is mentioned, reflect awareness (e.g., \"I have noted the application closes on X\")\n\nOutput format (strict):\nSubject: Re: {{ $json[\"subject\"] }} — Scholarship Announcement\nBody:\n<greeting + acknowledgment of scholarship announcement + appreciation + intent to review/apply if eligible + request for missing info if needed + closing>\n\nSignature:\nMuhammad Hanan Zia\nUG Student, NUST\n",
+              "role": "system"
+            }
+          ]
+        },
+        "simplify": false,
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        656,
+        -192
+      ],
+      "id": "2ecb7d49-da65-4e20-b818-54212e00eac9",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "lm0WzzERB2cVstlm",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "={{ $json.choices[0].message.content.Subject }}",
+        "message": "={{ $json.choices[0].message.content.Body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1248,
+        -48
+      ],
+      "id": "4bbeb8fe-d2f2-408f-a3eb-8a12d49aa343",
+      "name": "Create a draft",
+      "webhookId": "e0bb083b-bbda-4721-8c61-13debde24f97",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "51p7N99WESsP1zlu",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are Muhammad Hanan Zia, a UG student at NUST. \nWrite a concise and professional reply to an email about an internship offer.\n\nGoals:\n- If it is a general internship announcement or open offer: \n   - Thank the sender for sharing the opportunity \n   - Express appreciation and interest \n   - Indicate that you will review the details (role, duration, requirements) and apply or confirm if eligible \n   - If details are missing (application process, eligibility, start date, deadline), politely ask for clarification \n\n- If it explicitly states you have been shortlisted/selected or asks to proceed: \n   - Express gratitude for the selection \n   - Confirm willingness to proceed, subject to receiving/understanding all requirements (joining date, documentation, etc.) \n   - Politely request any missing critical details (process, timeline, documents) before final confirmation \n\nConstraints:\n- Max 160 words\n- Plain text (no markdown)\n- Avoid unconditional commitments until details are clear\n- If deadline or joining date is mentioned, reflect awareness (e.g., \"I have noted the start date on X\")\n\nOutput format (strict):\nSubject: Re: {{ $json[\"subject\"] }} — Internship Offer\nBody:\n<greeting + acknowledgment (general OR selection case) + appreciation + intent (review/apply OR confirm next steps) + request for missing info if needed + closing>\n\nSignature:\nMuhammad Hanan Zia\nUG Student, NUST\n",
+              "role": "system"
+            }
+          ]
+        },
+        "simplify": false,
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        656,
+        16
+      ],
+      "id": "3cfd947d-9823-4be3-a576-b637bf9e4ecf",
+      "name": "Message a model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "lm0WzzERB2cVstlm",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "={{ $json.choices[0].message.content.Subject }}",
+        "message": "={{ $json.choices[0].message.content.Body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1248,
+        144
+      ],
+      "id": "f945e887-6e48-43a0-a4d8-dc0720e3c9ea",
+      "name": "Create a draft1",
+      "webhookId": "8d110e2e-ddb0-4204-b78d-6006a55b3ef9",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "51p7N99WESsP1zlu",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are Muhammad Hanan Zia, a UG student at NUST. \nWrite a concise and professional reply to an email about an internship offer.\n\nGoals:\n- If it is a general internship announcement or open offer: \n   - Thank the sender for sharing the opportunity \n   - Express appreciation and interest \n   - Indicate that you will review the details (role, duration, requirements) and apply or confirm if eligible \n   - If details are missing (application process, eligibility, start date, deadline), politely ask for clarification \n\n- If it explicitly states you have been shortlisted/selected or asks to proceed: \n   - Express gratitude for the selection \n   - Confirm willingness to proceed, subject to receiving/understanding all requirements (joining date, documentation, etc.) \n   - Politely request any missing critical details (process, timeline, documents) before final confirmation \n\nConstraints:\n- Max 160 words\n- Plain text (no markdown)\n- Avoid unconditional commitments until details are clear\n- If deadline or joining date is mentioned, reflect awareness (e.g., \"I have noted the start date on X\")\n\nOutput format (strict):\nSubject: Re: {{ $json[\"subject\"] }} — Internship Offer\nBody:\n<greeting + acknowledgment (general OR selection case) + appreciation + intent (review/apply OR confirm next steps) + request for missing info if needed + closing>\n\nSignature:\nMuhammad Hanan Zia\nUG Student, NUST\n",
+              "role": "system"
+            }
+          ]
+        },
+        "simplify": false,
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        656,
+        224
+      ],
+      "id": "0c258fd4-6780-4f4e-9f66-0f03024fa7cc",
+      "name": "Message a model2",
+      "credentials": {
+        "openAiApi": {
+          "id": "lm0WzzERB2cVstlm",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "={{ $json.choices[0].message.content.Subject }}",
+        "message": "={{ $json.choices[0].message.content.Body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1248,
+        368
+      ],
+      "id": "fe7f6a40-5f95-47d1-ae0e-1917fb471118",
+      "name": "Create a draft2",
+      "webhookId": "a8b6c388-6bba-4c89-932e-88f2161d7efc",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "51p7N99WESsP1zlu",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are Muhammad Hanan Zia, a UG student at NUST. \nWrite a concise and professional reply to an email related to portfolio concerns (feedback, suggestions, requests for review, or guidance).  \n\nGoals:\n- If the email offers feedback or suggestions: \n   - Thank the sender for their time and constructive input \n   - Acknowledge key point(s) and express intent to work on improvements \n\n- If the email requests to review or evaluate your portfolio: \n   - Thank the sender for their interest \n   - Confirm willingness to share/review further \n   - If details are missing (format preference, specific sections, deadline), politely request clarification \n\n- If the email raises concerns about errors, missing info, or formatting: \n   - Acknowledge the concern \n   - Assure the sender you will make necessary corrections/updates \n   - Request additional details if something is unclear \n\n- If the email also includes project-related queries (e.g., about a project in your portfolio): \n   - Thank them for their interest in the project \n   - Briefly acknowledge the query and express openness to discuss further \n   - Ask for specifics (scope, goals, or aspect they want explained) to provide a clear response \n\n- If the email mixes portfolio with unrelated general talks: \n   - Politely acknowledge the additional comments or questions \n   - Show openness and appreciation for their engagement \n   - If action is expected, request clarification \n\nConstraints:\n- Max 170 words \n- Plain text (no markdown) \n- Always keep tone polite, receptive, and professional \n- Avoid defensive language; focus on appreciation, improvement, and openness \n- If deadline or next step is mentioned, reflect awareness (e.g., \"I have noted that the updated version is needed by X\")  \n\nOutput format (strict):\nSubject: Re: {{ $json[\"subject\"] }} — Portfolio Concern\nBody:\n<greeting + acknowledgment of feedback/concern/project/general talk + appreciation + intent to improve/share/respond + ask for clarification if needed + closing>  \n\nSignature:\nMuhammad Hanan Zia\nUG Student, NUST\n",
+              "role": "system"
+            }
+          ]
+        },
+        "simplify": false,
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        656,
+        720
+      ],
+      "id": "43ae9b3c-34f0-4fc4-b861-9d7b26b6e77c",
+      "name": "Message a model3",
+      "credentials": {
+        "openAiApi": {
+          "id": "lm0WzzERB2cVstlm",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "={{ $json.choices[0].message.content.Subject }}",
+        "message": "={{ $json.choices[0].message.content.Body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1248,
+        880
+      ],
+      "id": "321adeea-c449-4191-9b52-0e0574634f19",
+      "name": "Create a draft3",
+      "webhookId": "4d3fb605-c52a-49d1-9f8d-8bfe9355c440",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "51p7N99WESsP1zlu",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are Muhammad Hanan Zia, a UG student at NUST.  \nWrite a concise and professional reply to an email related to queries about your project(s).  \n\nGoals:\n- If the sender asks for project details (methods, scope, results, or tools):  \n   - Thank them for their interest  \n   - Briefly acknowledge the project and share a short overview  \n   - Offer to provide further details if they specify what aspect they are most interested in  \n\n- If the sender asks for resources (code, dataset, report):  \n   - Thank them for their request  \n   - Indicate willingness to share if permissible OR ask them to clarify what resource they specifically need  \n   - If sharing is conditional (e.g., private repo, unpublished data), politely mention that  \n\n- If the sender proposes collaboration/extension on your project:  \n   - Express appreciation for their interest  \n   - Show openness to discuss further  \n   - Ask them to share their focus, timeline, and expectations before confirming  \n\nConstraints:\n- Max 170 words  \n- Plain text (no markdown)  \n- Always polite, professional, and collaborative in tone  \n- Avoid overcommitting until you have full clarity on what’s requested  \n- If a deadline is mentioned (e.g., they need info urgently), reflect awareness  \n\nOutput format (strict):  \nSubject: Re: {{ $json[\"subject\"] }} — Project Query  \nBody:  \n<greeting + acknowledgment of query + brief reflection of their request + appreciation + intent to answer/share/discuss + ask for clarification or next step if needed + closing>  \n\nSignature:  \nMuhammad Hanan Zia  \nUG Student, NUST\n",
+              "role": "system"
+            }
+          ]
+        },
+        "simplify": false,
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        656,
+        464
+      ],
+      "id": "f8dc876f-9ce9-40d0-bef1-f505dc5be8c3",
+      "name": "Message a model4",
+      "credentials": {
+        "openAiApi": {
+          "id": "lm0WzzERB2cVstlm",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "={{ $json.choices[0].message.content.Subject }}",
+        "message": "={{ $json.choices[0].message.content.Body }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1248,
+        640
+      ],
+      "id": "523c30b2-9498-4c99-b550-0902b7c6b4bf",
+      "name": "Create a draft4",
+      "webhookId": "3b61e0bc-ece3-4857-8cc0-f67b1104a431",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "51p7N99WESsP1zlu",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Classifier": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Message a model1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Message a model2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Message a model3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Message a model4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Create a draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model1": {
+      "main": [
+        [
+          {
+            "node": "Create a draft1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model2": {
+      "main": [
+        [
+          {
+            "node": "Create a draft2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model3": {
+      "main": [
+        [
+          {
+            "node": "Create a draft3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model4": {
+      "main": [
+        [
+          {
+            "node": "Create a draft4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ef0580e3-2409-486e-9af4-e7f7dd033f3b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a6e15e8bbcde9560613ec3ce6860c865375c544a838cedea70e278d043ecc8e2"
+  },
+  "id": "MHeIFNC9oRBT3sdl",
+  "tags": []
+}

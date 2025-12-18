@@ -1,5 +1,8 @@
 {
   "dependencies": {
     "expo": "^54.0.27"
+  },
+  "devDependencies": {
+    "vite": "^7.3.0"
   }
 }

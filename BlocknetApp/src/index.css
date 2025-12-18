@@ -1,0 +1,160 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* BlockNet - Professional Corporate Design System
+   All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Professional Corporate Theme - Light Mode */
+    --background: 210 20% 98%;
+    --foreground: 215 25% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 15%;
+
+    /* Deep Blue Primary */
+    --primary: 212 63% 24%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Steel Gray Secondary */
+    --secondary: 215 14% 34%;
+    --secondary-foreground: 0 0% 100%;
+
+    /* Light Gray Muted */
+    --muted: 210 20% 96%;
+    --muted-foreground: 215 14% 45%;
+
+    /* Teal Accent */
+    --accent: 168 76% 36%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Destructive Red */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Success Green */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
+    /* Warning Amber */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 0%;
+
+    --border: 214 20% 88%;
+    --input: 214 20% 88%;
+    --ring: 212 63% 24%;
+
+    --radius: 0.5rem;
+
+    /* Sidebar */
+    --sidebar-background: 212 63% 24%;
+    --sidebar-foreground: 210 20% 98%;
+    --sidebar-primary: 168 76% 36%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 212 63% 30%;
+    --sidebar-accent-foreground: 210 20% 98%;
+    --sidebar-border: 212 63% 30%;
+    --sidebar-ring: 168 76% 36%;
+
+    /* Chart colors */
+    --chart-1: 212 63% 24%;
+    --chart-2: 168 76% 36%;
+    --chart-3: 215 14% 34%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 142 71% 45%;
+  }
+
+  .dark {
+    /* Professional Corporate Theme - Dark Mode */
+    --background: 215 25% 10%;
+    --foreground: 210 20% 98%;
+
+    --card: 215 25% 14%;
+    --card-foreground: 210 20% 98%;
+
+    --popover: 215 25% 14%;
+    --popover-foreground: 210 20% 98%;
+
+    /* Deep Blue Primary (lighter for dark mode) */
+    --primary: 212 63% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Steel Gray Secondary */
+    --secondary: 215 14% 50%;
+    --secondary-foreground: 0 0% 100%;
+
+    /* Dark Muted */
+    --muted: 215 20% 20%;
+    --muted-foreground: 215 14% 65%;
+
+    /* Teal Accent */
+    --accent: 168 76% 42%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Destructive Red */
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Success Green */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
+    /* Warning Amber */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 0%;
+
+    --border: 215 20% 22%;
+    --input: 215 20% 22%;
+    --ring: 212 63% 50%;
+
+    /* Sidebar Dark */
+    --sidebar-background: 215 25% 8%;
+    --sidebar-foreground: 210 20% 98%;
+    --sidebar-primary: 168 76% 42%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 25% 14%;
+    --sidebar-accent-foreground: 210 20% 98%;
+    --sidebar-border: 215 25% 14%;
+    --sidebar-ring: 168 76% 42%;
+
+    /* Chart colors dark */
+    --chart-1: 212 63% 50%;
+    --chart-2: 168 76% 42%;
+    --chart-3: 215 14% 50%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 142 71% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer utilities {
+  /* Safe area padding for mobile devices */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-area-left {
+    padding-left: env(safe-area-inset-left);
+  }
+  .safe-area-right {
+    padding-right: env(safe-area-inset-right);
+  }
+}

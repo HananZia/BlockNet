@@ -7,13 +7,13 @@ blockchain = Blockchain()
 def hash_file(file_data):
     return hashlib.sha256(file_data).hexdigest()
 
-def save_file_record(file_data, filename, user_id):
+def save_file_record(file_data, name, user_id):
     file_hash = hash_file(file_data)
 
     new_block = blockchain.add_block(file_hash, user_id)
 
     file_record = FileRecord(
-        filename=filename,
+        name=name,
         file_hash=file_hash,
         user_id=user_id,
         block_index=new_block.index,
