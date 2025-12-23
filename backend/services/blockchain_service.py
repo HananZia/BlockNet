@@ -3,8 +3,8 @@ import json
 from datetime import datetime
 from models import Block, db
 
-
 class BlockchainService:
+
     # ---------------- HASH ----------------
     @staticmethod
     def calculate_hash(index, previous_hash, data_str, timestamp):
@@ -94,11 +94,9 @@ class BlockchainService:
             current = blocks[i]
             prev = blocks[i - 1]
 
-            # Check link
             if current.previous_hash != prev.block_hash:
                 return False
 
-            # Recalculate hash
             recalculated_hash = BlockchainService.calculate_hash(
                 current.index,
                 current.previous_hash,

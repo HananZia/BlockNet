@@ -10,6 +10,10 @@ import AppLayout from "@/components/layout/AppLayout";
 // Pages
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
+import ForgotPassword from "@/pages/ForgotPassword";
+import VerifyOtp from "@/pages/VerifyOtp";
+import ResetPassword from "@/pages/ResetPassword";
+
 import Dashboard from "@/pages/Dashboard";
 import Files from "@/pages/Files";
 import Sharing from "@/pages/Sharing";
@@ -27,11 +31,16 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            {/* Public Routes */}
+            {/* ---------------- PUBLIC ROUTES ---------------- */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            
-            {/* Protected Routes with App Layout */}
+
+            {/* Forgot Password Flow */}
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/verify-otp" element={<VerifyOtp />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+
+            {/* ---------------- PROTECTED ROUTES ---------------- */}
             <Route
               path="/dashboard"
               element={
@@ -42,6 +51,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/files"
               element={
@@ -52,6 +62,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/sharing"
               element={
@@ -62,6 +73,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/explorer"
               element={
@@ -72,6 +84,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/admin"
               element={
@@ -82,11 +95,11 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            
-            {/* Redirect root to dashboard */}
+
+            {/* ---------------- REDIRECTS ---------------- */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            
-            {/* Catch-all */}
+
+            {/* ---------------- 404 ---------------- */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

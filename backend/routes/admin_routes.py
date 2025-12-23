@@ -1,7 +1,8 @@
-from flask import Blueprint, jsonify
+import os
+from flask import Blueprint, current_app, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from extensions import db
-from models import User, FileRecord, FileShare
+from models import Certificate, Certificate, User, FileRecord, FileShare
 from schemas import UserSchema, FileRecordSchema, FileShareSchema
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/api/admin")
@@ -71,9 +72,38 @@ def stats():
 @jwt_required()
 @admin_required
 def all_files():
-    """Return all files in the system"""
+    """Return all files with computed size, owner, uploadedAt, and verified status"""
     files = FileRecord.query.all()
-    return jsonify(files_schema.dump(files)), 200
+    result = []
+
+    for f in files:
+        # Compute file size if storage_uri exists
+        size = 0
+        if f.storage_uri:
+            file_path = f.storage_uri
+            if not os.path.isabs(file_path):
+                file_path = os.path.join(current_app.instance_path, "uploads", f.name)
+            if os.path.exists(file_path):
+                size = os.path.getsize(file_path)
+
+        # Get owner username safely
+        owner_name = f.owner.username if f.owner else "Unknown"
+
+        # Check if file has a valid certificate (verified)
+        latest_cert = f.certificates.order_by(Certificate.issued_at.desc()).first()
+        verified = latest_cert is not None and latest_cert.blockchain_index is not None
+
+        result.append({
+            "id": f.id,
+            "name": f.name,
+            "owner": owner_name,
+            "size": size,
+            "uploadedAt": f.created_at.isoformat(),
+            "verified": verified
+        })
+
+    return jsonify(result), 200
+
 
 @admin_bp.route("/files/<int:file_id>", methods=["GET"])
 @jwt_required()

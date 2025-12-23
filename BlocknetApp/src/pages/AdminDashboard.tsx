@@ -7,19 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import {
-  Users,
-  File,
-  Blocks,
-  Search,
-  Shield,
-  Activity,
-  HardDrive,
-  TrendingUp,
-  UserCheck,
-  Mail,
-  Calendar
-} from 'lucide-react';
+import { Users, File, Shield, UserCheck, Mail, Search } from 'lucide-react';
 import { api } from '@/services/api';
 
 // ----------------------
@@ -38,21 +26,20 @@ interface UserResponse {
   role: string;
   is_active: boolean;
   created_at: string;
-  files?: any[]; // optional if backend returns user files
   filesCount?: number;
 }
 
 interface FileResponse {
   id: number;
   name: string;
-  owner: string;
-  size?: string;
+  owner: string | { username: string }; // backend might return string or object
+  size: string;
   uploadedAt: string;
   verified?: boolean;
 }
 
 // ----------------------
-// Component
+// Admin Dashboard Component
 // ----------------------
 export default function AdminDashboard() {
   const { user, isAdmin } = useAuth();
@@ -65,13 +52,10 @@ export default function AdminDashboard() {
     active_users: 0,
     total_files: 0,
   });
-
   const [users, setUsers] = useState<UserResponse[]>([]);
   const [files, setFiles] = useState<FileResponse[]>([]);
 
-  // ----------------------
-  // Load data
-  // ----------------------
+  // ---------------------- Load Data ----------------------
   const loadStats = async () => {
     try {
       const data = await api.get<StatsResponse>('/admin/stats');
@@ -84,11 +68,7 @@ export default function AdminDashboard() {
   const loadUsers = async () => {
     try {
       const data = await api.get<UserResponse[]>('/admin/users');
-      const usersWithCount = data.map((u) => ({
-        ...u,
-        filesCount: u.files?.length ?? 0,
-      }));
-      setUsers(usersWithCount);
+      setUsers(data.map(u => ({ ...u, filesCount: u.filesCount ?? 0 })));
     } catch {
       toast({ title: 'Error', description: 'Failed to load users', variant: 'destructive' });
     }
@@ -97,7 +77,13 @@ export default function AdminDashboard() {
   const loadFiles = async () => {
     try {
       const data = await api.get<FileResponse[]>('/admin/files');
-      setFiles(data);
+      const mappedFiles = data.map(f => ({
+        ...f,
+        uploadedAt: f.uploadedAt ?? '',
+        verified: f.verified ?? false,
+        owner: typeof f.owner === 'string' ? f.owner : f.owner?.username ?? 'Unknown',
+      }));
+      setFiles(mappedFiles);
     } catch {
       toast({ title: 'Error', description: 'Failed to load files', variant: 'destructive' });
     }
@@ -111,20 +97,14 @@ export default function AdminDashboard() {
     }
   }, [isAdmin]);
 
-  // ----------------------
-  // User actions
-  // ----------------------
+  // ---------------------- User Actions ----------------------
   const handleToggleUser = async (userId: number, currentStatus: boolean) => {
     try {
       await api.toggleUserStatus(userId);
-      setUsers((prev) =>
-        prev.map((u) =>
-          u.id === userId ? { ...u, is_active: !currentStatus } : u
-        )
-      );
+      setUsers(prev => prev.map(u => (u.id === userId ? { ...u, is_active: !currentStatus } : u)));
       toast({
         title: currentStatus ? 'User deactivated' : 'User activated',
-        description: 'User status has been updated',
+        description: 'User status updated',
       });
     } catch {
       toast({ title: 'Error', description: 'Failed to update user status', variant: 'destructive' });
@@ -132,48 +112,42 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteUser = async (userId: number) => {
-    if (!confirm('Are you sure you want to delete this user? This will remove all their files.')) return;
+    if (!confirm('Are you sure you want to delete this user? All their files will be removed.')) return;
     try {
       await api.deleteUser(userId);
-      setUsers(users.filter((u) => u.id !== userId));
+      setUsers(users.filter(u => u.id !== userId));
       toast({ title: 'User deleted', description: 'The user has been removed' });
     } catch {
       toast({ title: 'Error', description: 'Failed to delete user', variant: 'destructive' });
     }
   };
 
-  // ----------------------
-  // File actions
-  // ----------------------
+  // ---------------------- File Actions ----------------------
   const handleDeleteFile = async (fileId: number) => {
     if (!confirm('Are you sure you want to delete this file?')) return;
     try {
       await api.deleteFile(fileId);
-      setFiles(files.filter((f) => f.id !== fileId));
+      setFiles(files.filter(f => f.id !== fileId));
       toast({ title: 'File deleted', description: 'The file has been removed' });
     } catch {
       toast({ title: 'Error', description: 'Failed to delete file', variant: 'destructive' });
     }
   };
 
-  // ----------------------
-  // Filtering
-  // ----------------------
+  // ---------------------- Filtering ----------------------
   const filteredUsers = users.filter(
-    (u) =>
+    u =>
       u.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
       u.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const filteredFiles = files.filter(
-    (f) =>
+    f =>
       f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      f.owner.toLowerCase().includes(searchQuery.toLowerCase())
+      (typeof f.owner === 'string' ? f.owner.toLowerCase() : '').includes(searchQuery.toLowerCase())
   );
 
-  // ----------------------
-  // Render
-  // ----------------------
+  // ---------------------- Render ----------------------
   return (
     <div className="space-y-6 animate-fade-in p-4">
       {/* Header */}
@@ -194,7 +168,7 @@ export default function AdminDashboard() {
           <TabsTrigger value="files">All Files</TabsTrigger>
         </TabsList>
 
-        {/* Overview Tab */}
+        {/* ---------------- Overview ---------------- */}
         <TabsContent value="overview" className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <Card className="border-border/50">
@@ -235,7 +209,7 @@ export default function AdminDashboard() {
           </div>
         </TabsContent>
 
-        {/* Users Tab */}
+        {/* ---------------- Users ---------------- */}
         <TabsContent value="users" className="space-y-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -246,9 +220,8 @@ export default function AdminDashboard() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-
           <div className="space-y-3">
-            {filteredUsers.map((u) => (
+            {filteredUsers.map(u => (
               <Card key={u.id} className="border-border/50">
                 <CardContent className="p-4 flex items-center space-x-3">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
@@ -283,7 +256,7 @@ export default function AdminDashboard() {
           </div>
         </TabsContent>
 
-        {/* Files Tab */}
+        {/* ---------------- Files ---------------- */}
         <TabsContent value="files" className="space-y-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -296,34 +269,41 @@ export default function AdminDashboard() {
           </div>
 
           <div className="space-y-3">
-            {filteredFiles.map((f) => (
-              <Card key={f.id} className="border-border/50">
-                <CardContent className="p-4 flex items-center space-x-3">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <File className="w-5 h-5 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{f.name}</p>
-                    <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                      <span>Owner: {f.owner}</span>
-                      <span>•</span>
-                      <span>{f.size ?? '-'}</span>
+            {filteredFiles.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No files found.</p>
+            ) : (
+              filteredFiles.map(file => (
+                <Card key={file.id} className="border-border/50">
+                  <CardContent className="p-4 flex items-center space-x-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <File className="w-5 h-5 text-primary" />
                     </div>
-                  </div>
-                  <div className="flex flex-col items-end space-y-1">
-                    <Badge variant={f.verified ? 'default' : 'secondary'} className="text-xs">
-                      {f.verified ? 'Verified' : 'Pending'}
-                    </Badge>
-                    <p className="text-xs text-muted-foreground">{f.uploadedAt}</p>
-                    <Button variant="destructive" size="sm" onClick={() => handleDeleteFile(f.id)}>
-                      Delete
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{file.name}</p>
+                      <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                        <span>Owner: {typeof file.owner === 'string' ? file.owner : 'Unknown'}</span>
+                        <span>•</span>
+                        <span>{file.size ?? '-'}</span>
+                        <span>•</span>
+                        <span>Uploaded: {file.uploadedAt ? new Date(file.uploadedAt).toLocaleDateString() : '-'}</span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end space-y-1">
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteFile(file.id)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
         </TabsContent>
+
       </Tabs>
     </div>
   );

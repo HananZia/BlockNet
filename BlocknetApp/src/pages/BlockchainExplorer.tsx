@@ -28,7 +28,6 @@ interface Transaction {
   status: 'confirmed' | 'pending' | 'failed';
 }
 
-
 export default function BlockchainExplorer() {
   const { toast } = useToast();
 
@@ -58,9 +57,7 @@ export default function BlockchainExplorer() {
 
   useEffect(() => {
     fetchTransactions();
-
-    // Real-time-ish updates via polling
-    const interval = setInterval(fetchTransactions, 10000);
+    const interval = setInterval(fetchTransactions, 10000); // polling every 10s
     return () => clearInterval(interval);
   }, [fetchTransactions]);
 
@@ -85,11 +82,19 @@ export default function BlockchainExplorer() {
     }
   };
 
-  const filteredTransactions = transactions.filter(tx =>
-    tx.tx_hash.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    tx.file_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    tx.file_hash.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  /* ---------------------------------------------
+   Search filter (case-insensitive, partial match)
+  --------------------------------------------- */
+  const filteredTransactions = transactions.filter(tx => {
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return true; // show all if search is empty
+
+    return (
+      (tx.tx_hash?.toLowerCase().includes(query) ?? false) ||
+      (tx.file_name?.toLowerCase().includes(query) ?? false) ||
+      (tx.file_hash?.toLowerCase().includes(query) ?? false)
+    );
+  });
 
   /* ---------------------------------------------
    UI
@@ -144,9 +149,7 @@ export default function BlockchainExplorer() {
                   <Copy className="w-3 h-3" />
                 </Button>
               </div>
-              <code className="text-xs bg-muted p-2 rounded block break-all">
-                {selectedTx.tx_hash}
-              </code>
+              <code className="text-xs bg-muted p-2 rounded block break-all">{selectedTx.tx_hash}</code>
             </div>
 
             <div className="grid grid-cols-2 gap-4 text-sm">
@@ -183,9 +186,7 @@ export default function BlockchainExplorer() {
 
             <div>
               <p className="text-muted-foreground text-xs">File Hash</p>
-              <code className="text-xs bg-muted p-2 rounded block break-all">
-                {selectedTx.file_hash}
-              </code>
+              <code className="text-xs bg-muted p-2 rounded block break-all">{selectedTx.file_hash}</code>
             </div>
           </CardContent>
         </Card>
@@ -203,11 +204,9 @@ export default function BlockchainExplorer() {
 
         <CardContent className="space-y-3">
           {filteredTransactions.length === 0 && !loading ? (
-            <p className="text-center text-sm text-muted-foreground py-8">
-              No transactions found
-            </p>
+            <p className="text-center text-sm text-muted-foreground py-8">No transactions found</p>
           ) : (
-            filteredTransactions.map(tx => (
+            filteredTransactions.map((tx) => (
               <div
                 key={tx.tx_hash}
                 className="p-3 rounded-lg border hover:bg-muted/50 cursor-pointer"

@@ -12,10 +12,9 @@ import {
   CheckCircle2,
   XCircle,
   Copy,
-  Download,
-  MoreVertical,
   Loader2,
-  Upload
+  Upload,
+  MoreVertical
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -39,12 +38,14 @@ interface VerificationResult {
   verified: boolean;
   status: string;
   message?: string;
-  file?: FileItem;
+  file?: FileItem | null;
 }
 
 export default function Files() {
   const [activeTab, setActiveTab] = useState('my-files');
   const [files, setFiles] = useState<FileItem[]>([]);
+  const [verifiedFiles, setVerifiedFiles] = useState<FileItem[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<FileItem[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [verifyFile, setVerifyFile] = useState<File | null>(null);
@@ -55,14 +56,45 @@ export default function Files() {
   const verifyInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
+  // ---------------- UTIL ----------------
+  const formatSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  };
+
+  const copyHash = (hash: string) => {
+    navigator.clipboard.writeText(hash);
+    toast({ title: 'Hash copied to clipboard', variant: 'default' });
+  };
+
+  const getVerificationSummary = (result: VerificationResult) => {
+    switch (result.status) {
+      case 'VERIFIED':
+        return 'This file is authentic. No changes were detected since it was registered on the blockchain.';
+      case 'TAMPERED':
+        return 'This file has been altered. Its contents do not match the original blockchain record.';
+      case 'NOT_FOUND':
+        return 'This file does not exist on the blockchain.';
+      default:
+        return result.message || 'Unable to determine file authenticity.';
+    }
+  };
+
   // ---------------- FETCH FILES ----------------
   const fetchFiles = async () => {
     try {
       const data: FileItem[] = await api.get(ENDPOINTS.FILES);
       setFiles(data);
+
+      const verified: FileItem[] = [];
+      const pending: FileItem[] = [];
+      data.forEach((f) => (f.verified ? verified.push(f) : pending.push(f)));
+      setVerifiedFiles(verified);
+      setPendingFiles(pending);
     } catch (err: any) {
       console.error('Failed to fetch files:', err);
-      toast({ title: 'Error', description: err.message || 'Failed to fetch your files', variant: 'destructive' });
+      toast({ title: 'Error', description: err.message || 'Failed to fetch files', variant: 'destructive' });
     }
   };
 
@@ -75,18 +107,23 @@ export default function Files() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const maxSizeMB = 50;
+    if (file.size / 1024 / 1024 > maxSizeMB) {
+      toast({ title: 'File too large', description: `Max size is ${maxSizeMB}MB`, variant: 'destructive' });
+      return;
+    }
+
     setIsUploading(true);
     setUploadProgress(0);
 
     try {
       await api.uploadFile(ENDPOINTS.FILE_UPLOAD, file, (percent) => setUploadProgress(percent));
       toast({ title: 'Success', description: `${file.name} uploaded successfully` });
-      setIsUploading(false);
-      setUploadProgress(0);
       fetchFiles();
     } catch (err: any) {
       console.error(err);
-      toast({ title: 'Error', description: err.message || 'Failed to upload file', variant: 'destructive' });
+      toast({ title: 'Upload Failed', description: err.message || 'Failed to upload file', variant: 'destructive' });
+    } finally {
       setIsUploading(false);
       setUploadProgress(0);
     }
@@ -113,57 +150,10 @@ export default function Files() {
     try {
       const data = await api.post<VerificationResult>(ENDPOINTS.FILE_VERIFY, formData, true);
       setVerificationResult(data);
-
-      // Display toast based on verification status
-      switch (data.status) {
-        case 'VERIFIED':
-          toast({
-            title: 'File Verified!',
-            description: 'This file exists on the blockchain and is authentic.',
-            variant: 'default',
-          });
-          break;
-        case 'TAMPERED':
-          toast({
-            title: 'File Tampered!',
-            description: data.message || 'The file content has been modified.',
-            variant: 'destructive',
-          });
-          break;
-        case 'NOT_FOUND':
-          toast({
-            title: 'File Not Found',
-            description: data.message || 'This file is not registered.',
-            variant: 'destructive',
-          });
-          break;
-        case 'NO_CERTIFICATE':
-          toast({
-            title: 'No Certificate',
-            description: data.message || 'No blockchain certificate found.',
-            variant: 'destructive',
-          });
-          break;
-        case 'BLOCK_NOT_FOUND':
-          toast({
-            title: 'Blockchain Error',
-            description: 'The blockchain block for this file could not be found.',
-            variant: 'destructive',
-          });
-          break;
-        case 'INVALID_BLOCK_DATA':
-          toast({
-            title: 'Blockchain Error',
-            description: 'The blockchain block data is invalid.',
-            variant: 'destructive',
-          });
-          break;
-        default:
-          toast({
-            title: 'Unknown Error',
-            description: 'Verification returned an unexpected status.',
-            variant: 'destructive',
-          });
+      if (data.status === 'VERIFIED') {
+        toast({ title: 'File Verified!', description: 'This file is authentic on the blockchain.', variant: 'default' });
+      } else {
+        toast({ title: data.status, description: data.message || '', variant: 'destructive' });
       }
     } catch (err: any) {
       console.error(err);
@@ -173,10 +163,43 @@ export default function Files() {
     }
   };
 
-  // ---------------- COPY HASH ----------------
-  const copyHash = (hash: string) => {
-    navigator.clipboard.writeText(hash);
-    toast({ title: 'Hash copied to clipboard' });
+  // ---------------- DOWNLOAD FILE ----------------
+  const handleDownloadFile = async (file: FileItem) => {
+    const token = localStorage.getItem('jwt');
+    if (!token) {
+      toast({ title: 'Error', description: 'You are not authenticated', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/files/download/${file.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) throw new Error('Failed to download file');
+
+      const blob = await res.blob();
+
+      // Extract filename from headers if provided
+      const contentDisposition = res.headers.get('Content-Disposition');
+      let filename = file.name;
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="?(.+)"?/);
+        if (match && match[1]) filename = match[1];
+      }
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error(err);
+      toast({ title: 'Error', description: err.message || 'Failed to download file', variant: 'destructive' });
+    }
   };
 
   return (
@@ -198,7 +221,7 @@ export default function Files() {
           {files.length === 0 && <p className="text-sm text-muted-foreground">No files uploaded yet.</p>}
           <div className="space-y-3">
             {files.map((file) => (
-              <Card key={file.id} className="border-border/50">
+              <Card key={file.id} className={`border-border/50 ${file.verified ? '' : 'bg-yellow-50'}`}>
                 <CardContent className="p-4 flex items-center space-x-3">
                   <div className="p-2 bg-primary/10 rounded-lg">
                     <File className="w-5 h-5 text-primary" />
@@ -211,13 +234,8 @@ export default function Files() {
                       <span>{new Date(file.created_at).toLocaleDateString()}</span>
                     </div>
                   </div>
-                  <Badge variant={file.verified ? 'default' : 'secondary'} className="shrink-0">
-                    {file.verified ? (
-                      <><CheckCircle2 className="w-3 h-3 mr-1" /> Verified</>
-                    ) : (
-                      <><XCircle className="w-3 h-3 mr-1" /> Pending</>
-                    )}
-                  </Badge>
+                  <Badge variant={file.verified ? 'default' : 'secondary'} className="shrink-0"></Badge>
+
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="shrink-0">
@@ -227,12 +245,6 @@ export default function Files() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => copyHash(file.filehash)}>
                         <Copy className="w-4 h-4 mr-2" /> Copy Hash
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Download className="w-4 h-4 mr-2" /> Download
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Shield className="w-4 h-4 mr-2" /> View Certificate
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -272,7 +284,7 @@ export default function Files() {
                 >
                   <Upload className="w-10 h-10 text-muted-foreground mb-3" />
                   <p className="text-sm font-medium">Click to select a file</p>
-                  <p className="text-xs text-muted-foreground mt-1">PDF, DOCX, XLSX, Images up to 50MB</p>
+                  <p className="text-xs text-muted-foreground mt-1">Any file type up to 50MB</p>
                 </div>
               )}
             </CardContent>
@@ -314,88 +326,46 @@ export default function Files() {
                 <Button onClick={handleVerify} className="w-full" disabled={isVerifying}>
                   {isVerifying ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Verifying...
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying...
                     </>
                   ) : (
                     <>
-                      <Shield className="mr-2 h-4 w-4" />
-                      Verify File
+                      <Shield className="mr-2 h-4 w-4" /> Verify File
                     </>
                   )}
                 </Button>
               )}
 
               {verificationResult && (
-  <Card
-    className={`border-2 ${
-      verificationResult.status === 'VERIFIED'
-        ? 'border-success bg-success/5'
-        : verificationResult.status === 'TAMPERED'
-        ? 'border-destructive bg-destructive/5'
-        : 'border-warning bg-warning/5'
-    }`}
-  >
-    <CardContent className="p-4 flex items-center space-x-3">
-      {verificationResult.status === 'VERIFIED' ? (
-        <CheckCircle2 className="w-8 h-8 text-success shrink-0" />
-      ) : verificationResult.status === 'TAMPERED' ? (
-        <XCircle className="w-8 h-8 text-destructive shrink-0" />
-      ) : (
-        <Shield className="w-8 h-8 text-warning shrink-0" />
-      )}
-      <div>
-        <p className="font-semibold">
-          {verificationResult.status === 'VERIFIED'
-            ? 'File Verified!'
-            : verificationResult.status === 'TAMPERED'
-            ? 'File Tampered!'
-            : verificationResult.status === 'NOT_FOUND'
-            ? 'File Not Registered'
-            : verificationResult.status === 'NO_CERTIFICATE'
-            ? 'No Certificate'
-            : verificationResult.status === 'BLOCK_NOT_FOUND'
-            ? 'Blockchain Block Not Found'
-            : verificationResult.status === 'INVALID_BLOCK_DATA'
-            ? 'Invalid Blockchain Data'
-            : 'Unknown Status'}
-        </p>
-        <p className="text-sm text-muted-foreground">
-          {verificationResult.status === 'VERIFIED'
-            ? 'This file exists on the blockchain and is authentic.'
-            : verificationResult.status === 'TAMPERED'
-            ? 'The file content has been modified since issuance.'
-            : verificationResult.status === 'NOT_FOUND'
-            ? 'This file has never been uploaded or name does not match.'
-            : verificationResult.status === 'NO_CERTIFICATE'
-            ? 'The file is uploaded but no blockchain certificate exists yet.'
-            : verificationResult.status === 'BLOCK_NOT_FOUND'
-            ? 'The blockchain block for this file could not be found.'
-            : verificationResult.status === 'INVALID_BLOCK_DATA'
-            ? 'The blockchain block data is invalid.'
-            : verificationResult.message || 'An unknown error occurred.'}
-        </p>
-
-        {verificationResult.file?.filehash && (
-          <div className="mt-3 p-2 bg-muted rounded-md">
-            <p className="text-xs text-muted-foreground mb-1">Blockchain Hash</p>
-            <div className="flex items-center space-x-2">
-              <code className="text-xs flex-1 truncate">{verificationResult.file.filehash}</code>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="shrink-0 h-6 w-6"
-                onClick={() => navigator.clipboard.writeText(verificationResult.file!.filehash)}
-              >
-                <Copy className="w-3 h-3" />
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
-    </CardContent>
-  </Card>
-)}
+                <Card
+                  className={`border-2 ${
+                    verificationResult.status === 'VERIFIED'
+                      ? 'border-success bg-success/5'
+                      : verificationResult.status === 'TAMPERED'
+                      ? 'border-destructive bg-destructive/5'
+                      : 'border-warning bg-warning/5'
+                  }`}
+                >
+                  <CardContent className="p-4 flex items-center space-x-3">
+                    {verificationResult.status === 'VERIFIED' ? (
+                      <CheckCircle2 className="w-8 h-8 text-success shrink-0" />
+                    ) : verificationResult.status === 'TAMPERED' ? (
+                      <XCircle className="w-8 h-8 text-destructive shrink-0" />
+                    ) : (
+                      <Shield className="w-8 h-8 text-warning shrink-0" />
+                    )}
+                    <div className="space-y-1">
+                      <p className="font-semibold text-base">{verificationResult.status}</p>
+                      <p className="text-sm">{getVerificationSummary(verificationResult)}</p>
+                      {verificationResult.file && (
+                        <p className="text-xs text-muted-foreground">
+                          Registered on {new Date(verificationResult.file.created_at).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

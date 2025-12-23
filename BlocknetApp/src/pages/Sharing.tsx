@@ -99,10 +99,31 @@ export default function Sharing() {
     }
   };
 
-  const handleDownload = (file: FileItem) => {
-    // Opens backend route for downloading
-    window.open(`/files/download/${file.id}`, '_blank');
-  };
+  const handleDownload = async (file: FileItem) => {
+  const response = await fetch(
+    `/api/files/download/${file.id}`,
+    {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Download failed");
+  }
+
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = file.name;
+  a.click();
+
+  window.URL.revokeObjectURL(url);
+};
+
 
   useEffect(() => {
     fetchMyFiles();

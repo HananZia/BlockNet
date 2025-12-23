@@ -117,7 +117,7 @@ class ApiService {
   }
 
   async deleteFile(fileId: number) {
-    return this.delete(`/api/admin/files/delete/${fileId}`);
+    return this.delete(`/admin/files/delete/${fileId}`);
   }
 
   async getStats() {

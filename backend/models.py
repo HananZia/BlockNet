@@ -14,6 +14,9 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
 
+    reset_otp = db.Column(db.String(6), nullable=True)
+    reset_otp_expiry = db.Column(db.DateTime, nullable=True)
+
     files = db.relationship("FileRecord", back_populates="owner", lazy="dynamic")
     sent_shares = db.relationship("FileShare", foreign_keys="FileShare.sender_id", back_populates="sender", lazy="dynamic")
     received_shares = db.relationship("FileShare", foreign_keys="FileShare.receiver_id", back_populates="receiver", lazy="dynamic")
@@ -29,6 +32,11 @@ class User(db.Model):
 
 class FileRecord(db.Model):
     __tablename__ = "files"
+
+    __table_args__ = (
+        db.UniqueConstraint("user_id", "name", name="uq_user_filename"),
+    )
+
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     name = db.Column(db.String(300), nullable=False)
@@ -36,6 +44,7 @@ class FileRecord(db.Model):
     storage_uri = db.Column(db.Text, nullable=True)
     block_index = db.Column(db.Integer, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    is_verified = db.Column(db.Boolean, default=False, nullable=False)  # new column
 
     owner = db.relationship("User", back_populates="files")
     shares = db.relationship("FileShare", back_populates="file", lazy="dynamic")

@@ -89,6 +89,15 @@ export default function Login() {
                 Don't have an account?{' '}
                 <Link to="/register" className="text-primary hover:underline font-medium">Sign up</Link>
               </p>
+              <div className="text-right">
+              <Link
+                to="/forgot-password"
+                className="text-sm text-primary hover:underline"
+              >
+                Forgot password?
+              </Link>
+                </div>
+
             </CardFooter>
           </form>
         </Card>

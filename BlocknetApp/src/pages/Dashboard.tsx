@@ -181,8 +181,8 @@ export default function Dashboard() {
                   activity.type === 'verify' ? 'bg-success/10' : 'bg-accent/10'
                 }`}>
                   {activity.type === 'upload' ? <FileUp className="w-3 h-3 text-primary" /> :
-                   activity.type === 'verify' ? <Shield className="w-3 h-3 text-success" /> :
-                   <Share2 className="w-3 h-3 text-accent" />}
+                  activity.type === 'verify' ? <Shield className="w-3 h-3 text-success" /> :
+                  <Share2 className="w-3 h-3 text-accent" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{activity.description}</p>

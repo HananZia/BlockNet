@@ -40,6 +40,8 @@ export const ENDPOINTS = {
   ADMIN_STATS :'/api/admin/stats',
   ADMIN_FILES :'/api/admin/files',
   ADMIN_TRANSACTIONS :'/api/admin/transactions',
-  ADMIN_TOGGLE_USER :'/api/admin/users/toggle/<int:user_id>'
+  ADMIN_TOGGLE_USER :'/api/admin/users/toggle/<int:user_id>',
+
+  FILE_CERTIFICATE: '/api/files/certificate'
 
 };
