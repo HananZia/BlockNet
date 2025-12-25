@@ -1,7 +1,7 @@
 // API Configuration
 // Change BASE_URL when your backend is deployed
 export const API_CONFIG = {
-  BASE_URL: 'http://127.0.0.1:5000',
+  BASE_URL: 'http://10.7.40.211:5000',
   API_PREFIX: '/api',
   TIMEOUT: 30000,
 };
