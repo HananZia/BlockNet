@@ -5,11 +5,28 @@ class ApiService {
     return localStorage.getItem('blocknet_token');
   }
 
+  /**
+   * Helper to generate headers for fetch and XHR requests.
+   * Includes JWT token and ngrok bypass headers.
+   */
   private getHeaders(isFormData: boolean = false): HeadersInit {
     const headers: HeadersInit = {};
     const token = this.getToken();
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    if (!isFormData) headers['Content-Type'] = 'application/json';
+
+    // 1. Authorization Header
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    // 2. Content Type (Do not set for FormData, browser does it automatically)
+    if (!isFormData) {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    // 3. CRITICAL: Bypass the ngrok "interstitial" warning page
+    // Without this, the app receives HTML instead of JSON.
+    headers['ngrok-skip-browser-warning'] = 'true';
+
     return headers;
   }
 
@@ -22,7 +39,11 @@ class ApiService {
       headers: this.getHeaders(),
       credentials: 'include',
     });
-    if (!res.ok) throw new Error(await res.text());
+    
+    if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || `GET request failed with status ${res.status}`);
+    }
     return res.json();
   }
 
@@ -37,7 +58,11 @@ class ApiService {
       body,
       credentials: 'include',
     });
-    if (!res.ok) throw new Error(await res.text());
+
+    if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || `POST request failed with status ${res.status}`);
+    }
     return res.json();
   }
 
@@ -50,12 +75,16 @@ class ApiService {
       headers: this.getHeaders(),
       credentials: 'include',
     });
-    if (!res.ok) throw new Error(await res.text());
+
+    if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || `DELETE request failed with status ${res.status}`);
+    }
     return res.json();
   }
 
   // ----------------------
-  // FILE UPLOAD
+  // FILE UPLOAD (XHR for Progress Tracking)
   // ----------------------
   async uploadFile(
     endpoint: string,
@@ -69,9 +98,16 @@ class ApiService {
       const xhr = new XMLHttpRequest();
       xhr.open('POST', getApiUrl(endpoint), true);
 
+      // --- Set Headers for XHR ---
       const token = this.getToken();
-      if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      if (token) {
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      }
+      
+      // CRITICAL: Bypass ngrok warning in XHR too
+      xhr.setRequestHeader('ngrok-skip-browser-warning', 'true');
 
+      // Track Progress
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable && onProgress) {
           const percent = Math.round((event.loaded / event.total) * 100);
@@ -79,16 +115,17 @@ class ApiService {
         }
       };
 
+      // Handle Response
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
           try {
             const response = JSON.parse(xhr.responseText);
             resolve(response);
           } catch (err) {
-            reject(new Error('Failed to parse server response'));
+            reject(new Error('Failed to parse server response as JSON'));
           }
         } else {
-          reject(new Error(xhr.responseText || 'Upload failed'));
+          reject(new Error(xhr.responseText || `Upload failed with status ${xhr.status}`));
         }
       };
 

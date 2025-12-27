@@ -1,7 +1,7 @@
 import os
 from flask import Flask, jsonify
 from flask_cors import CORS
-from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
+from flask_jwt_extended import JWTManager
 
 from config import Config
 from extensions import db, migrate, mail
@@ -15,23 +15,44 @@ from routes.sharing_routes import share_bp
 from routes.blockchain_routes import blockchain_bp
 from routes.dashboard_routes import dashboard_bp
 
+
 def create_app(config_class=Config):
+    """
+    Factory to create Flask app with all configurations
+    """
     app = Flask(__name__)
     app.config.from_object(config_class)
 
-    # Enable CORS
-    CORS(app, supports_credentials=True)
+    # -------------------------------
+    # CORS Configuration
+    # -------------------------------
+    # Expose Authorization header for JWT
+    # Supports credentials (cookies, headers)
+    CORS(
+    app,
+    supports_credentials=True,
+    resources={r"/*": {"origins": "*"}},
+    # Add 'ngrok-skip-browser-warning' to allow_headers
+    allow_headers=["Content-Type", "Authorization", "ngrok-skip-browser-warning"],
+    expose_headers=["Authorization"]
+)
 
+    # -------------------------------
     # Ensure upload folder exists
+    # -------------------------------
     os.makedirs(os.path.join(app.root_path, "instance/uploads"), exist_ok=True)
 
+    # -------------------------------
     # Initialize extensions
+    # -------------------------------
     db.init_app(app)
     migrate.init_app(app, db)
     mail.init_app(app)
     JWTManager(app)
 
+    # -------------------------------
     # Register blueprints
+    # -------------------------------
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(files_bp)
@@ -39,18 +60,24 @@ def create_app(config_class=Config):
     app.register_blueprint(blockchain_bp)
     app.register_blueprint(dashboard_bp)
 
-    # Health check
+    # -------------------------------
+    # Health check endpoint
+    # -------------------------------
     @app.route("/", methods=["GET"])
     def health():
         return jsonify({"success": "BlockNet Backend running."})
 
-    # Create DB tables and genesis block if not exist
+    # -------------------------------
+    # Initialize DB & Blockchain
+    # -------------------------------
     with app.app_context():
         db.create_all()
         BlockchainService.create_genesis_block()
 
     return app
 
+
 if __name__ == "__main__":
+    # Run on 0.0.0.0 for ngrok tunneling
     app = create_app()
     app.run(host="0.0.0.0", port=5000, debug=True)
