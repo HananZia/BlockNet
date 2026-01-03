@@ -1,50 +1,112 @@
-# Welcome to your Expo app 👋
+BlockNet
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+BlockNet is a blockchain-based file verification and secure-sharing application that helps users verify file integrity and share authenticated files securely. By recording file hashes on a blockchain, BlockNet provides tamper-evident proof of a file's authenticity.
 
-## Get started
+Project Overview
 
-1. Install dependencies
+BlockNet lets users:
 
-   ```bash
-   npm install
-   ```
+- Register and authenticate accounts
+- Upload files and verify their integrity
+- Detect whether a file has been tampered with
+- Securely share verified files with other users
+- Maintain trust via a blockchain-backed verification system
 
-2. Start the app
+Each file is cryptographically hashed and recorded on the blockchain, ensuring transparency, immutability, and authenticity.
 
-   ```bash
-   npx expo start
-   ```
+Why Blockchain?
 
-In the output, you'll find options to open the app in a
+Traditional file-sharing systems cannot reliably prove whether a file has been altered. BlockNet addresses this by:
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- Storing file hashes on a blockchain
+- Making file records immutable
+- Allowing instant verification against the blockchain ledger
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+Once recorded, a file's integrity can be checked at any time.
 
-## Get a fresh project
+Tech Stack
 
-When you're ready, run:
+Backend
+
+- Flask — RESTful API server
+- Custom Python blockchain implementation (backend/blockchain.py)
+- SQLite — lightweight database for users and metadata
+
+Frontend
+
+- React — user interface
+- Expo — development and testing
+- Capacitor CLI — native Android integration
+- Android Studio — Android builds & emulator support
+
+Application Flow
+
+1. User registration — create and authenticate an account.
+2. File upload — user uploads a file and the system generates a cryptographic hash.
+3. Blockchain record — the hash is stored in a new blockchain block.
+4. File verification — users can re-upload or check a file; hash comparison shows whether it is authentic or tampered.
+5. Secure sharing — verified files can be securely shared; the blockchain ensures authenticity.
+
+Core Features
+
+- User authentication
+- File integrity verification
+- Blockchain-backed hash storage
+- Tamper detection
+- Secure peer-to-peer file sharing
+- Android-ready application
+
+
+Installation & Setup
+
+Backend (Flask)
 
 ```bash
-npm run reset-project
+cd backend
+python -m venv venv
+# macOS / Linux
+source venv/bin/activate
+# Windows PowerShell
+venv\Scripts\Activate.ps1
+# Windows (cmd.exe)
+venv\Scripts\activate.bat
+pip install -r requirements.txt
+python app.py
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Frontend (Expo + React)
 
-## Learn more
+```bash
+cd BlocknetApp
+npm install
+npx expo start
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+Android Build (Capacitor)
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+npx cap sync android
+npx cap open android
+```
 
-## Join the community
+Use Cases
 
-Join our community of developers creating universal apps.
+- Verifying academic documents
+- Secure sharing of legal files
+- Authenticating digital assets
+- Ensuring file integrity across networks
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Future Enhancements
+
+- Multi-node blockchain support
+- Public/private key encryption for file access
+- Cloud-backed file storage options
+- Web dashboard and administrative views
+- iOS support
+- Smart contract integration for advanced workflows
+
+Group Member
+
+Muhammad Hanan Zia
+Muhammad Haris
+Amna Imran
